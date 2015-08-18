@@ -53,7 +53,7 @@ if base.include?("www.")
 else
 	mobilesite = base.gsub("http://", "http://m.")
 end
- 
+
 puts "\nChecking for existence of mobile site at #{mobilesite}...\n"
 
 # Now load that URL and see what response you get
@@ -70,4 +70,9 @@ rescue SocketError => e
   puts "Mobile site does not exist at this address."
 end
 
-# Next: Visit all CSS files (or limit to non-font files) and check for media queries. Get all breakpoints. 
+# Next: Visit all CSS files (or limit to non-font files) and check for media queries. Get all breakpoints.
+
+
+font-weight: 400;
+  src: local("Roboto"), local("Roboto-Regular"), url("http://fonts.gstatic.com/s/roboto/v15/CWB0XYA8bzo0kSThX0UTuA.woff2") format("woff2"), url("http://fonts.gstatic.com/s/roboto/v15/2UX7WLTfW3W8TclTUvlFyQ.woff") format("woff");
+}

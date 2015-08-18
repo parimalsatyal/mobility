@@ -1,0 +1,30 @@
+# Inspired by a PHP implementation (need to find author name)
+def parseMediaBlocks (rawcss)
+
+    mediablocks = []
+    start = 0
+
+    do until ((start = rawcss.match("@media").begin(start) !== false)
+      s = []
+        i = rawcss.index("{").begin(start)
+
+        if (!i) do
+          s.push(rawcss[i])
+          i += 1
+
+          loop do
+            if (rawcss[i] == "{")
+              s.push("{")
+            elsif (rawcss[i] == "}")
+              s.delete("}")
+            end
+            i += 1
+            break if s.empty?
+          end
+
+          mediablocks = rawcss[start, ((i + 1) - start)]
+          start = i
+        end
+    end
+    return mediablocks
+end
