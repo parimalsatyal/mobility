@@ -3,10 +3,7 @@ require 'nokogiri'
 require 'rest-client'
 require 'net/http'
 require 'uri'
-
-# For CSS parsing
 require 'css_parser'
-include CssParser
 
 # This script requires Ruby and the gems Nokogiri and rest-client
 # Let's get started
@@ -25,12 +22,14 @@ user_agents = Hash[
   "iPhone" => "Mozilla/5.0 (iPhone; U; CPU like Mac OS X; en) AppleWebKit/420+ (KHTML, like Gecko) Version/3.0 Mobile/1A543 Safari/419.3",
   "WinDesktop" => "Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.118 Safari/537.36"]
 
+	puts "\n\nChecking if the website serves different stylesheets for desktop and mobile...\n\n"
+
 # First check with a Desktop UA and spit out all linked stylesheets
 page = Nokogiri::HTML(RestClient.get page_url, :user_agent => user_agents["WinDesktop"])
 desktop_stylesheets = page.css("link[rel=stylesheet]")
-desktop_alternate = page.css("link[rel=alternate]")
+desktop_alternate = page.css("link[rel=alternate]") # We're not using this yet
 
-puts "On Desktop, using #{desktop_stylesheets.class}: \n"
+puts "On Desktop, these stylesheets are being loaded: \n"
 puts desktop_stylesheets
 puts "\n"
 # puts desktop_alternate
@@ -38,9 +37,9 @@ puts "\n"
 # Then check with a mobile UA and spit out all linked stylesheets
 page = Nokogiri::HTML(RestClient.get page_url, :user_agent => user_agents["iPhone"])
 mobile_stylesheets = page.css("link[rel=stylesheet]")
-mobile_canonical = page.css("link[rel=canonical]")
+mobile_canonical = page.css("link[rel=canonical]") # We're not using this yet
 
-puts "On Phone: \n"
+puts "On Phone, these stylesheets are being loaded: \n"
 puts mobile_stylesheets
 puts "\n"
 # puts mobile_canonical
@@ -48,9 +47,9 @@ puts "\n"
 # Then check if there's a difference in output between the two
 
 if desktop_stylesheets.to_s == mobile_stylesheets.to_s
-	puts "\nNot Dynamic serving"
+	puts "\nThey're identical. This website does not serve different stylesheets dynamically based on the user agent."
 else
-	puts "\nDynamic serving"
+	puts "\nDynamic serving. Different stylesheets are loaded depending on the user agent."
   dynamicserving = true
 end
 
@@ -66,7 +65,7 @@ else
 	mobilesite = base.gsub("http://", "http://m.")
 end
 
-puts "\nChecking for existence of dedicated mobile site at #{mobilesite}...\n"
+puts "\nNow checking if a dedicated mobile site exists at #{mobilesite}...\n"
 
 # Now load that URL and see what response you get
 begin
@@ -84,48 +83,35 @@ rescue SocketError => e
   puts "Mobile site not found at this address."
 end
 
-
-# Inspired by a PHP implementation (need to find author name)
-def parseMediaBlocks (rawcss)
-
-    mediablocks = []
-    start = 0
-
-    until (!(rawcss.index("@media") == start))
-      s = []
-        i = rawcss.index("{").begin(start)
-
-        if (!i)
-          s.push(rawcss[i])
-          i += 1
-
-          loop do
-            if (rawcss[i] == "{")
-              s.push("{")
-            elsif (rawcss[i] == "}")
-              s.delete("}")
-            end
-            i += 1
-            break if s.empty?
-          end
-
-          mediablocks = rawcss[start, ((i + 1) - start)]
-          start = i
-        end
-    end
-    return mediablocks
-end
-
-
 # Next: Visit all CSS files (or limit to non-font files) and check for media queries. Get all breakpoints.
 parser = CssParser::Parser.new
 
-desktop_stylesheets.each do |link|
-  url_css = link["href"].strip
-  parser.load_uri!(url_css)
-  raw_css = parser.to_s
-  puts "\nMedia query lines for #{url_css} are: \n
-  \n"
-  puts parseMediaBlocks(raw_css)
-
+puts "\n\nResources: \n\n"
+page.xpath('//link[@rel="stylesheet"]').each do |stylesheet|
+  resourceaddress = stylesheet['href']
+  realaddr = nil
+  if resourceaddress.match(/^\//)
+    realaddr = "#{uri.scheme}://#{uri.host}#{resourceaddress}"
+  else
+    realaddr = resourceaddress
+  end
+  puts realaddr
+  parser.load_uri!(realaddr)
+    raw_css = parser.to_s
+    r = /@media ?[^)]*?\([^)]*?(max|min)-width ?: ?([0-9]+)px[^)]*?\)/
+    recoveredqueries = raw_css.scan(r)
+    recoveredqueries.each do |d,a|
+      puts d + ":" + a
+    end
 end
+
+=begin
+  parser = CssParser::Parser.new
+  parser.load_uri!(stylesheet)
+    raw_css = parser.to_s
+    r = /@media ?[^)]*?\([^)]*?(max|min)-width ?: ?([0-9]+)px[^)]*?\)/
+    recoveredqueries = raw_css.scan(r)
+    recoveredqueries.each do |d,a|
+      puts d + ":" + a
+    end
+=end
