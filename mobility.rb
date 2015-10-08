@@ -4,7 +4,7 @@ require 'rest-client'
 require 'net/http'
 require 'uri'
 require 'css_parser'
-
+include CssParser
 # This script requires Ruby and the gems Nokogiri and rest-client
 # Let's get started
 
@@ -84,9 +84,8 @@ rescue SocketError => e
 end
 
 # Next: Visit all CSS files (or limit to non-font files) and check for media queries. Get all breakpoints.
-parser = CssParser::Parser.new
-
-puts "\n\nResources: \n\n"
+responsive = false
+puts "\n\nChecking for @media queries... \n\n"
 page.xpath('//link[@rel="stylesheet"]').each do |stylesheet|
   resourceaddress = stylesheet['href']
   realaddr = nil
@@ -95,23 +94,21 @@ page.xpath('//link[@rel="stylesheet"]').each do |stylesheet|
   else
     realaddr = resourceaddress
   end
-  puts realaddr
+  parser = CssParser::Parser.new
   parser.load_uri!(realaddr)
     raw_css = parser.to_s
     r = /@media ?[^)]*?\([^)]*?(max|min)-width ?: ?([0-9]+)px[^)]*?\)/
     recoveredqueries = raw_css.scan(r)
-    recoveredqueries.each do |d,a|
-      puts d + ":" + a
+    unless recoveredqueries.empty?
+      recoveredqueries.each do |d,a|
+        puts d + ":" + a + "\n"
+      end
+      responsive = true
     end
 end
 
-=begin
-  parser = CssParser::Parser.new
-  parser.load_uri!(stylesheet)
-    raw_css = parser.to_s
-    r = /@media ?[^)]*?\([^)]*?(max|min)-width ?: ?([0-9]+)px[^)]*?\)/
-    recoveredqueries = raw_css.scan(r)
-    recoveredqueries.each do |d,a|
-      puts d + ":" + a
-    end
-=end
+if responsive
+  puts "The website is responsive, with breakpoints listed above."
+else
+  puts "The website is not responsive"
+end
