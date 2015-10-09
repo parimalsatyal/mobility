@@ -1,3 +1,7 @@
+# Mobility.rb
+# Author: Parimal Satyal, parimal.satyal@razorfish.com
+# Thanks to François Dursus for his help
+
 require 'rubygems'
 require 'nokogiri'
 require 'rest-client'
